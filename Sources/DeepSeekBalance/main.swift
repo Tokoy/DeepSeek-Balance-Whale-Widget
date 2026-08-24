@@ -101,9 +101,10 @@ final class BubbleView: NSView {
 
     required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
 
-    /// 单行内容（时间大号 / 台词常规）：居中
+    /// 单行内容（时间大号）：居中
     func setTop(_ s: String, size: CGFloat) {
         line1.stringValue = s
+        line1.textColor = ink
         line1.font = .monospacedDigitSystemFont(ofSize: size, weight: .semibold)
         line2.isHidden = true
         line1.frame = NSRect(x: 48, y: 191, width: 152, height: 24)
@@ -113,11 +114,28 @@ final class BubbleView: NSView {
     /// 两行内容（余额 + 今日已用）：标题行略大，副行小字
     func setTopBottom(_ top: String, _ bottom: String) {
         line1.stringValue = top
+        line1.textColor = ink
         line1.font = .monospacedDigitSystemFont(ofSize: 13, weight: .semibold)
         line2.isHidden = false
         line2.stringValue = bottom
+        line2.textColor = ink
+        line2.font = .monospacedDigitSystemFont(ofSize: 11, weight: .regular)
         line1.frame = NSRect(x: 48, y: 202, width: 152, height: 18)
         line2.frame = NSRect(x: 48, y: 185, width: 152, height: 15)
+        needsDisplay = true
+    }
+
+    /// 台词模式：上行淡色「已思考(用时3 秒)」DeepSeek 人设，下行俏皮话
+    func setThought(_ line: String) {
+        line1.stringValue = "已思考(用时3 秒)"
+        line1.textColor = NSColor(calibratedWhite: 0.45, alpha: 1)
+        line1.font = .systemFont(ofSize: 9, weight: .regular)
+        line2.isHidden = false
+        line2.stringValue = line
+        line2.textColor = ink
+        line2.font = .monospacedDigitSystemFont(ofSize: 12, weight: .semibold)
+        line1.frame = NSRect(x: 48, y: 201, width: 152, height: 13)
+        line2.frame = NSRect(x: 48, y: 186, width: 152, height: 16)
         needsDisplay = true
     }
 
@@ -192,8 +210,10 @@ final class WhaleView: NSView {
         layoutSubviews()
     }
 
-    func updateLines(_ top: String, _ bottom: String, topSize: CGFloat) {
-        if bottom.isEmpty {
+    func updateLines(_ top: String, _ bottom: String, topSize: CGFloat, isPhrase: Bool = false) {
+        if isPhrase {
+            bubble.setThought(top)
+        } else if bottom.isEmpty {
             bubble.setTop(top, size: topSize)
         } else {
             bubble.setTopBottom(top, bottom)
@@ -309,8 +329,8 @@ final class WhaleWindowController {
         window.setFrameOrigin(NSPoint(x: vf.maxX - f.width - 40, y: vf.minY + 40))
     }
 
-    func updateLines(_ top: String, _ bottom: String, topSize: CGFloat) {
-        whaleView.updateLines(top, bottom, topSize: topSize)
+    func updateLines(_ top: String, _ bottom: String, topSize: CGFloat, isPhrase: Bool = false) {
+        whaleView.updateLines(top, bottom, topSize: topSize, isPhrase: isPhrase)
     }
     func savePosition() {
         let f = window.frame
@@ -440,25 +460,25 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     /// 气泡内容：台词段(3s) > 余额展示段(5s) > 当前模式（时间大字体）
-    private var displayContent: (top: String, bottom: String, topSize: CGFloat) {
+    private var displayContent: (top: String, bottom: String, topSize: CGFloat, isPhrase: Bool) {
         let now = Date()
         if let p = phrase, let until = phraseUntil, now < until {
-            return (p, "", 13)
+            return (p, "", 13, true)
         }
         if let until = peekUntil, now < until {
             phrase = nil
             let lines = balanceLines
-            return (lines.0, lines.1, 13)
+            return (lines.0, lines.1, 13, false)
         }
         if let until = peekUntil, now >= until {
             phrase = nil
             peekUntil = nil
         }
         if mode == "time" {
-            return (timeFormatter.string(from: Date()), "", 15)
+            return (timeFormatter.string(from: Date()), "", 15, false)
         }
         let lines = balanceLines
-        return (lines.0, lines.1, 13)
+        return (lines.0, lines.1, 13, false)
     }
 
     private var balanceLines: (String, String) {
@@ -491,7 +511,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         button.attributedTitle = NSAttributedString(string: displayText, attributes: attrs)
         button.toolTip = tooltipText
         let content = displayContent
-        whale?.updateLines(content.top, content.bottom, topSize: content.topSize)
+        whale?.updateLines(content.top, content.bottom, topSize: content.topSize, isPhrase: content.isPhrase)
     }
 
     // MARK: Click / Menu
