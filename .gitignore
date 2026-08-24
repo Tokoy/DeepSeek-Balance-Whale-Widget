@@ -8,3 +8,4 @@
 /br*.png
 /menubar*.png
 build/
+.blink-frame.png
