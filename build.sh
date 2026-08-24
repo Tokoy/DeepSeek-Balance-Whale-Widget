@@ -39,4 +39,7 @@ PLIST
 codesign --force --sign - "$DEST" 2>/dev/null || true
 
 echo "✅ 已安装到 $DEST"
+# 杀掉旧进程再启动，确保加载新代码
+pkill -f "$APP_NAME" 2>/dev/null || true
+sleep 0.5
 open "$DEST"
