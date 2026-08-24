@@ -1,0 +1,9 @@
+.build/
+.DS_Store
+*.tar.gz
+/full.png
+/w*.png
+/mb*.png
+/bub*.png
+/br*.png
+/menubar*.png
