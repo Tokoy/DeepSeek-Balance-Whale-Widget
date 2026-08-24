@@ -105,6 +105,7 @@ final class BubbleView: NSView {
     func setTop(_ s: String, size: CGFloat) {
         line1.stringValue = s
         line1.textColor = ink
+        line1.alignment = .center
         line1.font = .monospacedDigitSystemFont(ofSize: size, weight: .semibold)
         line2.isHidden = true
         line1.frame = NSRect(x: 48, y: 191, width: 152, height: 24)
@@ -115,6 +116,7 @@ final class BubbleView: NSView {
     func setTopBottom(_ top: String, _ bottom: String) {
         line1.stringValue = top
         line1.textColor = ink
+        line1.alignment = .center
         line1.font = .monospacedDigitSystemFont(ofSize: 13, weight: .semibold)
         line2.isHidden = false
         line2.stringValue = bottom
@@ -125,16 +127,17 @@ final class BubbleView: NSView {
         needsDisplay = true
     }
 
-    /// 台词模式：上行淡色「已思考(用时3 秒)」DeepSeek 人设，下行俏皮话
+    /// 台词模式：左上角淡色「已思考(用时3 秒)」DeepSeek 人设，居中俏皮话
     func setThought(_ line: String) {
         line1.stringValue = "已思考(用时3 秒)"
         line1.textColor = NSColor(calibratedWhite: 0.45, alpha: 1)
+        line1.alignment = .left
         line1.font = .systemFont(ofSize: 9, weight: .regular)
         line2.isHidden = false
         line2.stringValue = line
         line2.textColor = ink
         line2.font = .monospacedDigitSystemFont(ofSize: 12, weight: .semibold)
-        line1.frame = NSRect(x: 48, y: 201, width: 152, height: 13)
+        line1.frame = NSRect(x: 56, y: 220, width: 140, height: 12)
         line2.frame = NSRect(x: 48, y: 186, width: 152, height: 16)
         needsDisplay = true
     }
