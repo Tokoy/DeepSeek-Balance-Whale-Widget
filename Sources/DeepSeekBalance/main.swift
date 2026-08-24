@@ -175,78 +175,19 @@ final class WhaleView: NSView {
     private var windowOrigin: NSPoint?
     private var dragged = false
 
-    // 眨眼：运行时生成闭眼帧，睁/闭帧切换（3~7 秒随机眨一次）
-    private var openImage: NSImage?
-    private var closedImage: NSImage?
-    private var blinkTimer: Timer?
-    private var nextBlinkAt = Date()
-
     override init(frame: NSRect) {
         super.init(frame: frame)
         if let img = NSImage(contentsOfFile: Self.whaleImagePath()) {
             imageView.image = img
-            openImage = img
         }
         imageView.imageScaling = .scaleProportionallyUpOrDown
         imageView.wantsLayer = true
         addSubview(bubble)          // 气泡在下层
         addSubview(imageView)       // 鲸鱼在上层
         layoutSubviews()
-        startBlink()
     }
 
     required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
-
-    deinit { blinkTimer?.invalidate() }
-
-    /// 生成闭眼帧：把两只眼睛区域用采样肤色椭圆盖住（眉毛保留）
-    private static func makeClosedEyes(from image: NSImage) -> NSImage? {
-        guard let cg = image.cgImage(forProposedRect: nil, context: nil, hints: nil) else { return nil }
-        let w = cg.width, h = cg.height
-        guard let ctx = CGContext(data: nil, width: w, height: h, bitsPerComponent: 8, bytesPerRow: w * 4,
-                                  space: CGColorSpaceCreateDeviceRGB(),
-                                  bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue) else { return nil }
-        ctx.draw(cg, in: CGRect(x: 0, y: 0, width: w, height: h))
-        // 眼睛区域（原图像素坐标，左上原点）：避开眉毛；CGContext 需 y 翻转
-        let eyes: [(CGRect, CGColor)] = [
-            (CGRect(x: 258, y: 344, width: 54, height: 30), CGColor(red: 248/255.0, green: 245/255.0, blue: 242/255.0, alpha: 1)),
-            (CGRect(x: 362, y: 348, width: 46, height: 36), CGColor(red: 250/255.0, green: 243/255.0, blue: 242/255.0, alpha: 1)),
-        ]
-        for (r, color) in eyes {
-            let flipped = CGRect(x: r.minX, y: CGFloat(h) - r.maxY, width: r.width, height: r.height)
-            ctx.setFillColor(color)
-            ctx.fillEllipse(in: flipped)
-        }
-        guard let out = ctx.makeImage() else { return nil }
-        return NSImage(cgImage: out, size: image.size)
-    }
-
-    /// 眨眼调度：每 0.5s 检查一次，到点就眨（闭 0.12s 恢复）
-    private func startBlink() {
-        guard closedImage == nil, let open = imageView.image else { return }
-        closedImage = Self.makeClosedEyes(from: open)
-        let t = Timer(timeInterval: 0.5, repeats: true) { [weak self] _ in
-            guard let self = self else { return }
-            let now = Date()
-            if now >= self.nextBlinkAt {
-                self.performBlink()
-                self.nextBlinkAt = now.addingTimeInterval(TimeInterval(3 + Int.random(in: 0...4)))
-            }
-        }
-        RunLoop.main.add(t, forMode: .common)
-        blinkTimer = t
-        nextBlinkAt = Date().addingTimeInterval(1.5)
-    }
-
-    private func performBlink() {
-        guard let closed = closedImage else { return }
-        imageView.image = closed
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.12) { [weak self] in
-            if let open = self?.openImage {
-                self?.imageView.image = open
-            }
-        }
-    }
 
     private static func whaleImagePath() -> String {
         if let url = Bundle.main.url(forResource: "whale", withExtension: "png") {
